@@ -2,9 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>横断山区 -> 华北平原 蚂蚁线动画</title>
-  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/openlayers/7.3.0/ol.min.css">
-  <script src="https://cdn.bootcdn.net/ajax/libs/openlayers/7.3.0/ol.min.js"></script>
+  <title>横断山区 -> 新疆绿洲 蚂蚁线动画</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+  <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
   <style>
     html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #f8f9fa; }
   </style>
@@ -12,29 +12,93 @@
 <body>
 <div id="map"></div>
 <script>
+// 1. 高德地图底图（国内秒开）
 const osmLayer = new ol.layer.Tile({
   source: new ol.source.XYZ({
     url: "https://webrd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
   })
 });
-const routeCoords = [[100.20,27.20],[98.00,30.00],[90.00,38.00],[84.88,45.59]];
+
+// 2. 路线坐标
+const routeCoords = [
+  [100.20, 27.20],  // 横断山区
+  [98.00, 30.00],
+  [90.00, 38.00],
+  [84.88, 45.59]    // 新疆绿洲
+];
+
 const vectorSource = new ol.source.Vector();
-const bgLineFeature = new ol.Feature({geometry: new ol.geom.LineString(routeCoords).transform("EPSG:4326","EPSG:3857")});
-bgLineFeature.setStyle(new ol.style.Style({stroke: new ol.style.Stroke({color:"rgba(224,102,163,0.6)",width:6})}));
-const antLineFeature = new ol.Feature({geometry: new ol.geom.LineString(routeCoords).transform("EPSG:4326","EPSG:3857")});
-const createMarker = (coords,text,color) => {
-  const m = new ol.Feature({geometry: new ol.geom.Point(ol.proj.fromLonLat(coords))});
-  m.setStyle(new ol.style.Style({
-    image: new ol.style.Circle({radius:8,fill:new ol.style.Fill({color}),stroke:new ol.style.Stroke({color:"#fff",width:2})}),
-    text: new ol.style.Text({text,font:"bold 15px Microsoft YaHei",offsetY:-22,fill:new ol.style.Fill({color:"#000"}),stroke:new ol.style.Stroke({color:"#fff",width:3})})
+
+// 底层半透明实线（路线背景轨）
+const bgLineFeature = new ol.Feature({
+  geometry: new ol.geom.LineString(routeCoords).transform("EPSG:4326", "EPSG:3857")
+});
+bgLineFeature.setStyle(new ol.style.Style({
+  stroke: new ol.style.Stroke({ color: "rgba(224, 102, 163, 0.6)", width: 6 })
+}));
+
+// 上层蚂蚁虚线（流动动画）
+const antLineFeature = new ol.Feature({
+  geometry: new ol.geom.LineString(routeCoords).transform("EPSG:4326", "EPSG:3857")
+});
+
+// 起点终点标注
+const createMarker = (coords, text, color) => {
+  const marker = new ol.Feature({
+    geometry: new ol.geom.Point(ol.proj.fromLonLat(coords))
+  });
+  marker.setStyle(new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: 8,
+      fill: new ol.style.Fill({ color: color }),
+      stroke: new ol.style.Stroke({ color: "#fff", width: 2 })
+    }),
+    text: new ol.style.Text({
+      text: text,
+      font: "bold 15px Microsoft YaHei, sans-serif",
+      offsetY: -22,
+      fill: new ol.style.Fill({ color: "#000" }),
+      stroke: new ol.style.Stroke({ color: "#fff", width: 3 })
+    })
   }));
-  return m;
+  return marker;
 };
-vectorSource.addFeatures([bgLineFeature,antLineFeature,createMarker(routeCoords[0],"横断山区","#2ecc71"),createMarker(routeCoords[3],"新疆绿洲","#e74c3c")]);
-const map = new ol.Map({target:"map",layers:[osmLayer,new ol.layer.Vector({source:vectorSource})],view:new ol.View({center:ol.proj.fromLonLat([92.5,36.0]),zoom:5})});
-let offset=0;
-function a(){offset-=0.6;if(offset<-20)offset=0;antLineFeature.setStyle(new ol.style.Style({stroke:new ol.style.Stroke({color:"#fff",width:4,lineDash:[12,12],lineDashOffset:offset})}));requestAnimationFrame(a)}
-a();
+
+vectorSource.addFeatures([
+  bgLineFeature,
+  antLineFeature,
+  createMarker(routeCoords[0], "横断山区", "#2ecc71"),
+  createMarker(routeCoords[3], "新疆绿洲", "#e74c3c")
+]);
+
+const vectorLayer = new ol.layer.Vector({ source: vectorSource });
+
+// 3. 初始化地图
+const map = new ol.Map({
+  target: "map",
+  layers: [osmLayer, vectorLayer],
+  view: new ol.View({
+    center: ol.proj.fromLonLat([92.5, 36.0]),
+    zoom: 5
+  })
+});
+
+// 4. 蚂蚁线动画
+let offset = 0;
+function animateAnts() {
+  offset -= 0.6;
+  if (offset < -20) offset = 0;
+  antLineFeature.setStyle(new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      color: "#fff",
+      width: 4,
+      lineDash: [12, 12],
+      lineDashOffset: offset
+    })
+  }));
+  requestAnimationFrame(animateAnts);
+}
+animateAnts();
 </script>
 </body>
 </html>
