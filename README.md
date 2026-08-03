@@ -76,7 +76,44 @@ git clone https://github.com/Palpi-tate/Map.git /var/www/html
 - **外网 SSH(22) 关闭**：无法直接 SSH，统一通过 DigitalOcean 的 **Web Console** 操作服务器。
 - **App Platform**：账号下没有已部署的 App Platform 应用，服务全部运行在 Droplet + ngrok 上。
 
-## 📬 访问入口
+## 📬 如何访问（访问流程）
 
-- 根域名：`https://saturday-earwig-unlisted.ngrok-free.dev/`
-- 各页面：见上方"项目结构"表中的在线路径
+### 方式一：通过 ngrok 域名（推荐，https，可分享给任何人）
+
+**第 1 步**：打开浏览器，输入以下完整地址（域名 + 页面路径）：
+
+| 页面 | 完整访问地址 |
+|---|---|
+| 首页（桃之起源） | `https://saturday-earwig-unlisted.ngrok-free.dev/index.html` |
+| 桃·东传北京 | `https://saturday-earwig-unlisted.ngrok-free.dev/tao2.html` |
+| 桃·南下江南 | `https://saturday-earwig-unlisted.ngrok-free.dev/tao3.html` |
+| 桃·西传世界 | `https://saturday-earwig-unlisted.ngrok-free.dev/tao-world.html` |
+| 马嵬遗恨 | `https://saturday-earwig-unlisted.ngrok-free.dev/mawei.html` |
+| 盛唐牡丹 | `https://saturday-earwig-unlisted.ngrok-free.dev/tang.html` |
+
+**第 2 步**：首次访问会看到 ngrok 的 "Visit Site" 确认页
+- 点击 **Visit Site** 按钮即可进入真实页面
+- 同一个浏览器之后再次访问不会再出现该确认页
+
+**第 3 步**：进入后即为全屏交互地图页面，直接用鼠标/手指拖动查看即可。
+
+> 💡 手机、电脑、任何设备都能打开，无需安装任何软件；复制上面的完整链接发给别人就能直接访问。
+
+### 方式二：通过服务器公网 IP（备选，无 https 证书）
+
+浏览器直接访问服务器 IP 的 80 端口：
+
+- `http://167.71.192.92/index.html`
+- 或 `http://167.71.192.92/tao2.html` 等
+
+> ⚠️ 注意：IP 方式为 http（无加密），仅作备选；日常分享请使用 ngrok 的 https 域名。
+
+### 访问流程速览
+
+```
+浏览器输入地址 → (仅首次) ngrok 确认页点 "Visit Site" → 看到地图页面
+```
+
+- 地址 = 域名 + `/` + 文件名（如 `/tao2.html`）
+- 想访问哪张图，就把对应的文件名换成上表的路径即可
+- 域名若失效（ngrok 免费版重启后地址可能变化），请按"工作流程"重新获取域名并同步服务器
