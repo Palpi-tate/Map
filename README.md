@@ -34,6 +34,53 @@ Droplet 服务器 167.71.192.92 : 80   ← nginx 静态站点
 - **服务器**：DigitalOcean Droplet（Ubuntu 24.04，`/var/www/html` 是 git clone）
 - **域名**：ngrok 免费隧道域名（重启/断线后地址可能变化）
 
+## 🧪 核心技术：服务器瓦片代理
+
+**解决什么问题**：OSM / ArcGIS 等国外底图国内直连不通，国内访客打不开地图。
+
+**思路**：不换底图源，在服务器上用 nginx 做**瓦片反向代理**——瓦片请求先进服务器，由新加坡服务器（能直连国外）去拉取，再转发给访客。访客不用挂梯子，底图风格完全保持原样。
+
+```
+国内访客浏览器 → 服务器 nginx(/tiles/osm/ 或 /tiles/natgeo/) → OSM / ArcGIS
+```
+
+**服务器配置**（`/etc/nginx/tiles_proxy.conf`，已在站点配置中 include）：
+
+```nginx
+location /tiles/osm/ {
+    proxy_pass https://tile.openstreetmap.org/;
+    proxy_set_header Host tile.openstreetmap.org;
+    expires 7d;
+    add_header Cache-Control "public, max-age=604800";
+}
+location /tiles/natgeo/ {
+    proxy_pass https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/;
+    proxy_set_header Host server.arcgisonline.com;
+    expires 7d;
+    add_header Cache-Control "public, max-age=604800";
+}
+```
+
+**网页侧**：把底图 URL 改成相对路径（指向服务器代理），风格不变：
+
+- OpenLayers：`source: new ol.source.XYZ({ url: 'tiles/osm/{z}/{x}/{y}.png' })`
+- Leaflet：`L.tileLayer('tiles/natgeo/{z}/{y}/{x}', {...}).addTo(map)`
+
+**各页面底图一览**：
+
+| 页面 | 底图 | 加载方式 |
+|---|---|---|
+| `index.html` | 高德 | 直连（国内） |
+| `tao2` / `tao3` | OpenStreetMap | 服务器代理 `/tiles/osm/` |
+| `tao-world` | ArcGIS NatGeo（古风） | 服务器代理 `/tiles/natgeo/` |
+| `mawei` / `tang` | 天地图 | 直连（国内） |
+
+**注意事项**：
+
+- ⚠️ 瓦片经 ngrok 域名访问会消耗免费版带宽（约 1GB/月）；改用服务器 IP 访问（`http://167.71.192.92/`）不耗 ngrok 流量
+- ⚠️ OSM / ArcGIS 官方不建议大规模无缓存代理，个人 / 教学小流量可用
+- ✅ 已加 `expires 7d`，浏览器会缓存瓦片，减少重复加载
+
 ## 🔄 工作流程
 
 ### 日常更新页面（改现有 HTML）
