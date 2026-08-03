@@ -39,6 +39,11 @@
             z-index: 1;
         }
 
+        /* 底图滤镜 —— 把高德底图调成复古羊皮纸色调，延续原古风风格 */
+        .leaflet-tile-pane {
+            filter: sepia(0.45) saturate(0.85) brightness(0.98) contrast(0.92) hue-rotate(8deg);
+        }
+
         /* 右侧叙事文案侧边栏 */
         #sidebar {
             width: 380px;
@@ -270,11 +275,10 @@
         maxZoom: 10
     });
 
-    // 2. 加载复古/古风羊皮纸风格底图 (Stamen Watercolor / Esri National Geographic Style)
-    // 这里选用 Esri World Topo Map / CartoDB Antique 风格做古风融合
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; National Geographic',
-        maxZoom: 12
+    // 2. 加载高德地图底图（国内直连无需代理），配合上方滤镜呈现复古羊皮纸风格
+    L.tileLayer('https://webrd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+        attribution: '&copy; 高德地图',
+        maxZoom: 18
     }).addTo(map);
 
     // 3. 数据定义：重要历史节点 (Points)
