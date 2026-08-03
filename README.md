@@ -76,6 +76,37 @@ git clone https://github.com/Palpi-tate/Map.git /var/www/html
 - **外网 SSH(22) 关闭**：无法直接 SSH，统一通过 DigitalOcean 的 **Web Console** 操作服务器。
 - **App Platform**：账号下没有已部署的 App Platform 应用，服务全部运行在 Droplet + ngrok 上。
 
+## 🌐 关于 ngrok（你的隧道域名技术）
+
+`saturday-earwig-unlisted.ngrok-free.dev` 是由 **ngrok** 提供的免费隧道域名。
+
+**ngrok 是什么？**
+- 一个"内网穿透 / 隧道"服务：把你服务器（或本地电脑）上的某个端口（本项目是 80 端口）暴露到公网，并自动生成一个 https 域名供外部访问。
+- 官网：https://ngrok.com
+
+**工作原理**
+
+```
+[ngrok 客户端运行在 Droplet 上]
+   │ 与 ngrok 云端建立加密隧道
+   ▼
+外部访问 https://saturday-earwig-unlisted.ngrok-free.dev
+   │ ngrok 云端转发
+   ▼
+Droplet 的 80 端口 → nginx → 网站页面
+```
+
+**为什么用 ngrok？**
+- ✅ 免备案、免买域名、免配置 HTTPS 证书（自动提供 https）
+- ✅ 即开即用，适合快速分享与演示
+- ✅ 手机、电脑任何设备直接打开即可访问
+
+**免费版限制（需要注意）**
+- ⚠️ 域名是随机生成的，**ngrok 重启或服务器断线后，地址可能变化**
+- ⚠️ 首次访问会显示 "Visit Site" 确认页
+- ⚠️ 有带宽和并发限制，不适合大流量
+- 💰 付费版可固定自定义域名、去掉确认页、提升带宽
+
 ## 📬 如何访问（访问流程）
 
 ### 方式一：通过 ngrok 域名（推荐，https，可分享给任何人）
