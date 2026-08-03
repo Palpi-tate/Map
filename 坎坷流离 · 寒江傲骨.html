@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香消玉殒 · 马嵬遗恨</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%; height: 100%;
+            background: #0d1117;
+            font-family: "STKaiti", "Kaiti", "PingFang SC", "Microsoft YaHei", serif;
+            overflow: hidden;
+        }
+
+        #map { width: 100%; height: 100%; }
+
+        /* 底图滤镜 —— 冷色凄清 */
+        .leaflet-tile-pane {
+            filter: grayscale(0.5) sepia(0.10) hue-rotate(195deg) saturate(0.30) brightness(0.72) contrast(1.08);
+        }
+
+        /* ── 顶部标题 ── */
+        .title-bar {
+            position: absolute;
+            top: 18px; left: 50%; transform: translateX(-50%);
+            z-index: 500;
+            background: rgba(13, 17, 23, 0.92);
+            border: 1px solid #607d8b; border-radius: 24px;
+            padding: 10px 30px;
+            color: #b0c4de; font-size: 19pt; font-weight: bold;
+            letter-spacing: 3px; text-align: center;
+            box-shadow: 0 4px 24px rgba(80, 120, 150, 0.25);
+            pointer-events: none;
+        }
+        .title-bar .sub {
+            display: block; font-size: 9.5pt; color: #78909c;
+            letter-spacing: 2px; font-weight: normal; margin-top: 2px;
+        }
+        .title-bar .meaning {
+            display: block; font-size: 8pt; color: #6a8595;
+            margin-top: 2px; font-style: italic;
+        }
+
+        /* ── 右下诗笺 ── */
+        .poem-chip {
+            position: absolute; bottom: 24px; right: 22px; z-index: 500;
+            background: rgba(13, 17, 23, 0.9);
+            border: 1px solid #546e7a; border-left: 4px solid #78909c;
+            border-radius: 6px; padding: 10px 16px;
+            color: #c8d6e5; font-family: "STKaiti","Kaiti",serif;
+            font-size: 13pt; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+            pointer-events: none; line-height: 1.8;
+            transition: opacity 0.3s, bottom 0.35s;
+        }
+        .poem-chip .attr { display: block; font-size: 8.5pt; color: #78909c; margin-top: 2px; }
+        .poem-chip.shifted { bottom: 140px; }
+
+        /* ── 左下牡丹标志 ── */
+        .peony-badge {
+            position: absolute; bottom: 24px; left: 22px; z-index: 500;
+            background: rgba(13, 17, 23, 0.9);
+            border: 1px solid #78909c; border-radius: 20px;
+            padding: 8px 16px; color: #b0c4de;
+            font-size: 11.5pt; font-weight: bold; letter-spacing: 2px;
+            box-shadow: 0 4px 16px rgba(80, 120, 150, 0.25);
+            pointer-events: none;
+            transition: bottom 0.35s;
+        }
+        .peony-badge.shifted { bottom: 140px; }
+
+        /* ── 底部故事面板 ── */
+        .story-panel {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            z-index: 600;
+            background: rgba(13, 17, 23, 0.96);
+            border-top: 2px solid #607d8b;
+            padding: 14px 50px 16px 24px;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+            pointer-events: auto;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+        }
+        .story-panel.show {
+            transform: translateY(0);
+        }
+        .story-panel .story-title {
+            font-size: 15pt; font-weight: bold; color: #b0c4de;
+            margin-bottom: 3px;
+        }
+        .story-panel .story-time {
+            font-size: 9pt; color: #78909c; margin-bottom: 6px;
+        }
+        .story-panel .story-body {
+            font-size: 11pt; color: #c8d6e5; line-height: 1.7;
+            max-width: 800px;
+        }
+        .story-close {
+            position: absolute; top: 10px; right: 16px;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 1px solid #78909c;
+            background: rgba(13,17,23,0.9);
+            color: #90a4ae; font-size: 16pt; line-height: 26px;
+            text-align: center; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .story-close:hover { background: #78909c; color: #0d1117; }
+
+        /* ── 标签 ── */
+        .lbl-pill {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.72); border-radius: 14px;
+            padding: 2px 10px; white-space: nowrap;
+        }
+        .lbl-fanyang { color: #c07070; font-size: 12pt; font-weight: bold; letter-spacing: 1px; }
+        .lbl-changan  { color: #b0c4de; font-size: 13pt; font-weight: bold; letter-spacing: 1px; }
+        .lbl-mawei   { color: #ef9a9a; font-size: 14pt; font-weight: bold; letter-spacing: 1px; }
+
+        /* ── 人物标签 ── */
+        .fig-label {
+            display: inline-block;
+            background: rgba(13,17,23,0.85); border: 1px solid #78909c;
+            border-radius: 10px; padding: 1px 8px;
+            color: #b0c4de; font-family: "STKaiti","Kaiti",serif;
+            font-size: 9pt; font-weight: bold; white-space: nowrap;
+        }
+
+        /* Leaflet 控件 */
+        .leaflet-control-zoom a {
+            background: rgba(13,17,23,0.85) !important;
+            color: #90a4ae !important; border-color: #37474f !important;
+        }
+        .leaflet-control-attribution {
+            background: rgba(13,17,23,0.75) !important;
+            color: #546e7a !important; font-size: 7.5pt !important;
+        }
+        .leaflet-control-attribution a { color: #78909c !important; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="title-bar">
+    香消玉殒 · 马嵬遗恨
+    <span class="sub">天宝十五载 · 安史之乱</span>
+    <span class="meaning">杨玉环如牡丹，纵然国色天香终成绝唱</span>
+</div>
+
+<div class="poem-chip" id="poemChip">
+    天长地久有时尽<br>此恨绵绵无绝期
+    <span class="attr">—— 白居易《长恨歌》</span>
+</div>
+
+<div class="peony-badge" id="peonyBadge">❀ 霜华白牡丹</div>
+
+<!-- 底部故事面板 -->
+<div class="story-panel" id="storyPanel">
+    <div class="story-close" id="storyClose">&times;</div>
+    <div class="story-title" id="storyTitle"></div>
+    <div class="story-time" id="storyTime"></div>
+    <div class="story-body" id="storyBody"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const TK = '7d4034bb34162bfa4cd8f9126391f180';
+
+const map = L.map('map', {
+    center: [37.0, 112.3], zoom: 6,
+    zoomControl: true, attributionControl: true,
+});
+
+L.tileLayer(
+    'https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=' + TK,
+    { subdomains: ['0','1','2','3','4','5','6','7'], maxZoom: 18 }
+).addTo(map);
+L.tileLayer(
+    'https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=' + TK,
+    { subdomains: ['0','1','2','3','4','5','6','7'], maxZoom: 18 }
+).addTo(map);
+
+// ══════════ 底部故事面板逻辑 ══════════
+const storyPanel = document.getElementById('storyPanel');
+const storyTitle = document.getElementById('storyTitle');
+const storyTime  = document.getElementById('storyTime');
+const storyBody  = document.getElementById('storyBody');
+const poemChip   = document.getElementById('poemChip');
+const peonyBadge = document.getElementById('peonyBadge');
+
+function showStory(title, time, story) {
+    storyTitle.textContent = title;
+    storyTime.textContent  = time;
+    storyBody.textContent  = story;
+    storyPanel.classList.add('show');
+    poemChip.classList.add('shifted');
+    peonyBadge.classList.add('shifted');
+}
+
+document.getElementById('storyClose').addEventListener('click', function() {
+    storyPanel.classList.remove('show');
+    poemChip.classList.remove('shifted');
+    peonyBadge.classList.remove('shifted');
+});
+
+// ══════════ 牡丹 SVG ══════════
+function peonyIcon(petalColor, centerColor, size) {
+    const h = size / 2;
+    const or = size * 0.28, orx = size * 0.14, ory = size * 0.23;
+    const ir = size * 0.18, irx = size * 0.10, iry = size * 0.16;
+    const cr = size * 0.12;
+    let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`;
+    s += `<circle cx="${h}" cy="${h}" r="${h-1}" fill="${petalColor}" opacity="0.06"/>`;
+    for (let i = 0; i < 8; i++) {
+        const a = i * 45;
+        const cx = h + or * Math.sin(a*Math.PI/180), cy = h - or * Math.cos(a*Math.PI/180);
+        s += `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${orx}" ry="${ory}" fill="${petalColor}" opacity="0.5" transform="rotate(${a} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`;
+    }
+    for (let i = 0; i < 8; i++) {
+        const a = i * 45 + 22.5;
+        const cx = h + ir * Math.sin(a*Math.PI/180), cy = h - ir * Math.cos(a*Math.PI/180);
+        s += `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${irx}" ry="${iry}" fill="${petalColor}" opacity="0.75" transform="rotate(${a} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`;
+    }
+    s += `<circle cx="${h}" cy="${h}" r="${cr}" fill="${centerColor}" stroke="${petalColor}" stroke-width="1.2"/>`;
+    const sr = cr * 0.3;
+    s += `<circle cx="${h-cr*0.35}" cy="${h-cr*0.2}" r="${sr}" fill="${petalColor}" opacity="0.8"/>`;
+    s += `<circle cx="${h+cr*0.35}" cy="${h-cr*0.2}" r="${sr}" fill="${petalColor}" opacity="0.8"/>`;
+    s += `<circle cx="${h}" cy="${h+cr*0.4}" r="${sr}" fill="${petalColor}" opacity="0.8"/>`;
+    s += '</svg>';
+    return s;
+}
+
+// ══════════ 坐标：范阳起兵 → 长安出逃 → 马嵬驿香消玉殒 ══════════
+const fanyang  = [39.92, 116.40];   // 范阳（安禄山起兵之地）
+const changan2 = [34.26, 108.94];   // 长安（出逃）
+const mawei    = [34.35, 108.28];   // 马嵬驿（被赐死）
+const routePoints = [fanyang, changan2, mawei];
+
+// ══════════ 行军路线 ══════════
+L.polyline(routePoints, {
+    color: '#607d8b', weight: 2.5, dashArray: '8, 6', opacity: 0.65, smoothFactor: 1,
+}).addTo(map);
+
+// ══════════ 地点标记（点击触发底部面板） ══════════
+const stories = {
+    fanyang: ['范阳 · 安禄山起兵', '天宝十四载（755年）',
+        '安禄山在范阳起兵，率十五万大军南下，"渔阳鼙鼓动地来，惊破霓裳羽衣曲"。盛世转眼间崩塌，杨玉环的命运也随之急转直下。昔日兴庆宫中沉香亭畔赏牡丹、华清池边舞霓裳的繁华盛景，骤然化作铁骑刀兵的阴影。牡丹尚未凋谢，风霜已至。'],
+    changan: ['长安 · 仓皇出逃', '天宝十五载（756年）',
+        '潼关失守，长安门户洞开。唐玄宗携杨贵妃、皇子皇孙及近臣，在龙武大将军陈玄礼所率禁军护卫下，于六月十三日凌晨仓皇逃离长安。昔日万国来朝的帝都，如今只剩下逃亡路上的烟尘与惶恐。杨玉环回望长安，那曾经的牡丹花海与华清池的温泉水汽，都在烽火中渐行渐远。'],
+    mawei: ['马嵬驿 · 香消玉殒', '天宝十五载六月十四日（756年）',
+        '逃至马嵬驿，禁军哗变。士兵们认为杨国忠祸国殃民、杨贵妃红颜误国，先杀杨国忠，继而包围驿站，逼迫玄宗赐死贵妃。\'六军不发无奈何，宛转蛾眉马前死。\'玄宗万分不舍却别无选择，杨玉环以一丈白绫缢死于马嵬坡佛堂前，年仅三十八岁。盛世牡丹，从此凋零。但白居易一首《长恨歌》，让这朵马嵬坡前的牡丹永远活在了中国人的记忆中——她虽香消玉殒，却如牡丹般化作千古绝唱。'],
+};
+
+function mkPeony(pos, petal, center, sz, storyKey) {
+    const mk = L.marker(pos, {
+        icon: L.divIcon({ className:'', html: peonyIcon(petal, center, sz), iconSize:[sz,sz], iconAnchor:[sz/2,sz/2] })
+    }).addTo(map);
+    mk.on('click', function() {
+        const s = stories[storyKey];
+        showStory(s[0], s[1], s[2]);
+    });
+    return mk;
+}
+
+function mkLabel(pos, html, w, h, ax, ay) {
+    L.marker(pos, {
+        icon: L.divIcon({ className:'', html: html, iconSize:[w,h], iconAnchor:[ax,ay] })
+    }).addTo(map);
+}
+
+mkPeony(fanyang, '#8b3a3a', '#c07070', 30, 'fanyang');
+mkLabel(fanyang, '<div class="lbl-pill"><span class="lbl-fanyang">范阳 · 安禄山起兵</span></div>', 150, 26, 75, 30);
+
+mkPeony(changan2, '#455a64', '#90a4ae', 42, 'changan');
+mkLabel(changan2, '<div class="lbl-pill"><span class="lbl-changan">长安 · 出逃</span></div>', 110, 28, 55, 34);
+
+mkPeony(mawei, '#b71c1c', '#ef9a9a', 52, 'mawei');
+mkLabel(mawei, '<div class="lbl-pill"><span class="lbl-mawei">马嵬驿 · 终</span></div>', 110, 28, 55, 36);
+
+// ══════════ 杨玉环人物形象（悲凉版） ══════════
+function yangFigure(robeColor, beltColor, skinColor) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -12 66 76" width="66" height="76">
+        <defs>
+            <filter id="ys2"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.4"/></filter>
+        </defs>
+        <g filter="url(#ys2)">
+            <!-- 披帛 左 -->
+            <path d="M8 24 Q-7 18 -8 34 Q-4 30 3 27" fill="${beltColor}" opacity="0.35"/>
+            <path d="M-8 34 Q-5 40 0 38 Q-3 35 -4 31" fill="${beltColor}" opacity="0.2"/>
+            <!-- 长裙曳地 -->
+            <path d="M6 44 Q4 56 3 64 L37 64 Q38 56 34 44 Z" fill="${robeColor}" opacity="0.9"/>
+            <!-- 裙摆褶皱 -->
+            <path d="M14 50 Q16 58 13 64" stroke="${robeColor}" stroke-width="0.6" fill="none" opacity="0.5"/>
+            <path d="M26 50 Q24 58 27 64" stroke="${robeColor}" stroke-width="0.6" fill="none" opacity="0.5"/>
+            <!-- 上襦 -->
+            <path d="M10 18 C7 30 7 38 8 48 L32 48 C34 38 33 30 30 18 Z" fill="${robeColor}"/>
+            <!-- 交领 -->
+            <path d="M13 18 L20 26 L27 18" fill="none" stroke="#1a2520" stroke-width="1"/>
+            <path d="M13 18 L20 28 L13 18" fill="#0a1510" opacity="0.2"/>
+            <!-- 束腰 -->
+            <rect x="7" y="32" width="26" height="3" rx="1.5" fill="${beltColor}"/>
+            <rect x="16" y="31" width="8" height="5" rx="1.5" fill="${beltColor}" opacity="0.7"/>
+            <!-- 腰带垂绦 -->
+            <path d="M18 35 L17 48" stroke="${beltColor}" stroke-width="1.8" stroke-linecap="round" opacity="0.5"/>
+            <!-- 披帛 右 -->
+            <path d="M28 22 Q42 16 46 26 Q40 23 32 26" fill="${beltColor}" opacity="0.35"/>
+            <!-- 左袖 -->
+            <path d="M10 20 Q0 26 -1 34 Q2 31 8 27 Z" fill="${robeColor}"/>
+            <!-- 右袖 -->
+            <path d="M30 20 Q40 24 42 32 Q38 29 32 26 Z" fill="${robeColor}"/>
+            <!-- 双手交叠 -->
+            <ellipse cx="18" cy="28" rx="4" ry="2.5" fill="${skinColor}" opacity="0.8"/>
+            <ellipse cx="22" cy="28" rx="4" ry="2.5" fill="${skinColor}" opacity="0.8"/>
+            <!-- 颈 -->
+            <rect x="16" y="12" width="8" height="6" rx="3" fill="${skinColor}"/>
+            <!-- 面部 -->
+            <ellipse cx="20" cy="8" rx="5.5" ry="6.5" fill="${skinColor}"/>
+            <!-- 高髻 底层 -->
+            <ellipse cx="20" cy="-2" rx="8" ry="6" fill="#1a1a1a"/>
+            <!-- 高髻 中层 -->
+            <ellipse cx="20" cy="-6" rx="6" ry="7" fill="#1a1a1a"/>
+            <!-- 高髻 顶部 -->
+            <ellipse cx="20" cy="-11" rx="4.5" ry="5" fill="#1a1a1a"/>
+            <!-- 发髻光泽 -->
+            <ellipse cx="18" cy="-7" rx="2.5" ry="3.5" fill="#2a2a2a" opacity="0.6"/>
+            <!-- 银钗（冷色） -->
+            <circle cx="20" cy="-14" r="2.5" fill="${beltColor}" opacity="0.7"/>
+            <circle cx="16" cy="-12" r="1.5" fill="${beltColor}" opacity="0.5"/>
+            <circle cx="24" cy="-12" r="1.5" fill="${beltColor}" opacity="0.5"/>
+            <circle cx="14" cy="-8" r="1.2" fill="${beltColor}" opacity="0.4"/>
+            <circle cx="26" cy="-8" r="1.2" fill="${beltColor}" opacity="0.4"/>
+            <!-- 花钿(额饰) 黯淡 -->
+            <circle cx="20" cy="2" r="1.2" fill="${beltColor}" opacity="0.5"/>
+            <!-- 黛眉 -->
+            <path d="M15.5 6 Q17 5 18.5 6" stroke="#3a2a1a" stroke-width="0.7" fill="none"/>
+            <path d="M21.5 6 Q23 5 24.5 6" stroke="#3a2a1a" stroke-width="0.7" fill="none"/>
+            <!-- 眼 -->
+            <ellipse cx="17.5" cy="7.5" rx="0.8" ry="0.9" fill="#2a1a1a"/>
+            <ellipse cx="22.5" cy="7.5" rx="0.8" ry="0.9" fill="#2a1a1a"/>
+            <!-- 鼻 -->
+            <path d="M20 7 L20 9.5" stroke="#c8b8a0" stroke-width="0.4"/>
+            <!-- 唇（苍白） -->
+            <ellipse cx="20" cy="11" rx="1.8" ry="1.2" fill="#a07070" opacity="0.7"/>
+            <!-- 耳坠（银色） -->
+            <circle cx="13.5" cy="8" r="1" fill="${beltColor}" opacity="0.5"/>
+            <circle cx="26.5" cy="8" r="1" fill="${beltColor}" opacity="0.5"/>
+        </g>
+    </svg>`;
+}
+
+// ══════════ 动画 marker ══════════
+const yangIcon = L.divIcon({
+    className: '',
+    html: yangFigure('#546e7a', '#90a4ae', '#e8d5c0'),
+    iconSize: [66, 76], iconAnchor: [33, 70],
+});
+const yangMarker = L.marker([fanyang[0], fanyang[1]], { icon: yangIcon, zIndexOffset: 100 }).addTo(map);
+
+const nameIcon = L.divIcon({
+    className: '',
+    html: '<div class="fig-label">杨玉环</div>',
+    iconSize: [52, 18], iconAnchor: [33, 78],
+});
+const nameMarker = L.marker([fanyang[0], fanyang[1]], { icon: nameIcon, zIndexOffset: 101 }).addTo(map);
+
+// ══════════ 沿路线动画 ══════════
+function startAnimation(marker, nameMk, path, durationMs) {
+    const segs = [];
+    let total = 0;
+    for (let i = 1; i < path.length; i++) {
+        const d = map.distance(path[i-1], path[i]);
+        segs.push({ a: path[i-1], b: path[i], dist: d, cum: total });
+        total += d;
+    }
+    if (total === 0) return;
+
+    function anim(ts) {
+        const elapsed = ts % durationMs;
+        const target = (elapsed / durationMs) * total;
+        for (const sg of segs) {
+            if (target >= sg.cum && target <= sg.cum + sg.dist) {
+                const t = sg.dist === 0 ? 0 : (target - sg.cum) / sg.dist;
+                const lat = sg.a[0] + (sg.b[0] - sg.a[0]) * t;
+                const lng = sg.a[1] + (sg.b[1] - sg.a[1]) * t;
+                marker.setLatLng([lat, lng]);
+                nameMk.setLatLng([lat, lng]);
+                break;
+            }
+        }
+        requestAnimationFrame(anim);
+    }
+    requestAnimationFrame(anim);
+}
+
+startAnimation(yangMarker, nameMarker, routePoints, 18000);
+</script>
+</body>
+</html>

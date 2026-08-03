@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地图三：桃沿丝绸之路的西传路线图（走向世界）</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- 引入 Google Fonts 复古古风字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            font-family: 'Noto Serif SC', serif;
+            background-color: #2b261f;
+            color: #3e2723;
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 主地图容器 */
+        #map {
+            flex: 1;
+            height: 100%;
+            background: #d9c5a0; /* 兜底羊皮纸底色 */
+            z-index: 1;
+        }
+
+        /* 右侧叙事文案侧边栏 */
+        #sidebar {
+            width: 380px;
+            height: 100%;
+            background: linear-gradient(135deg, #f4ecd8 0%, #e8d8b5 100%);
+            box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            border-left: 2px solid #8c6d46;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            background-color: #8c241d;
+            color: #f4ecd8;
+            padding: 24px 20px;
+            border-bottom: 3px solid #d4a359;
+        }
+
+        .sidebar-header h1 {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 26px;
+            font-weight: normal;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .sidebar-header .subtitle {
+            font-size: 13px;
+            color: #e8cfa6;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        /* 核心文案卡片 */
+        .story-card {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid #c2a675;
+            border-radius: 6px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .story-card h2 {
+            font-size: 17px;
+            color: #8c241d;
+            border-bottom: 2px dashed #b8860b;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .story-card p {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #4a3728;
+            text-align: justify;
+        }
+
+        .highlight-quote {
+            background: #e6d3a7;
+            border-left: 4px solid #8c241d;
+            padding: 10px 12px;
+            margin: 12px 0;
+            font-size: 13px;
+            font-style: italic;
+            color: #5c2223;
+        }
+
+        /* 节点列表导航 */
+        .node-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .node-item {
+            background: #fdfbf7;
+            border: 1px solid #d5c3a5;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .node-item:hover {
+            border-color: #8c241d;
+            background: #fff8ee;
+            transform: translateX(4px);
+        }
+
+        .node-item .node-name {
+            font-weight: 600;
+            color: #2c1d11;
+            font-size: 15px;
+        }
+
+        .node-item .node-tag {
+            font-size: 11px;
+            background: #8c241d;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        /* 地图自定义 Marker 样式 */
+        .custom-node-pin {
+            width: 16px;
+            height: 16px;
+            background-color: #e63946;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(230, 57, 70, 0.8);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(230, 57, 70, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); }
+        }
+
+        /* 图例控件 */
+        .legend-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            background: rgba(244, 236, 216, 0.92);
+            border: 1px solid #8c6d46;
+            padding: 12px 16px;
+            border-radius: 6px;
+            z-index: 1000;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #8c241d;
+            border-bottom: 1px solid #c2a675;
+            padding-bottom: 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .legend-line-bg { width: 24px; height: 3px; background: #8b7355; opacity: 0.6; }
+        .legend-line-main { width: 24px; height: 5px; background: #e63946; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <!-- 地图窗口 -->
+    <div id="map"></div>
+
+    <!-- 左下角图例 -->
+    <div class="legend-panel">
+        <div class="legend-title">图例说明</div>
+        <div class="legend-item">
+            <div class="legend-line-bg"></div>
+            <span>传统陆上丝绸之路（背景）</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line-main"></div>
+            <span>桃西传核心主干线</span>
+        </div>
+        <div class="legend-item">
+            <div class="custom-node-pin" style="animation:none; width:12px; height:12px;"></div>
+            <span>重要历史节点/传播枢纽</span>
+        </div>
+    </div>
+
+    <!-- 右侧叙事侧边栏 -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h1>桃沿丝绸之路的西传路线</h1>
+            <div class="subtitle">THE WESTWARD ROUTE OF PEACHES</div>
+        </div>
+
+        <div class="sidebar-content">
+            <!-- 叙事文案卡片 -->
+            <div class="story-card">
+                <h2>🍑 从“Persica”到“中国桃”</h2>
+                <p>汉代张骞通西域后，桃沿着丝绸之路从甘肃、新疆一路西行，经中亚传入波斯。</p>
+                <div class="highlight-quote">
+                    "植物学家一度将桃的学名误定为 Prunus persica（意为‘波斯苹果’）。"
+                </div>
+                <p>由于西方最早在波斯接触到这种美味的水果，产生了这一历史误解。然而，分布在中国大地的野生种与《诗经》的古老记载证明：<strong>中国，才是全世界桃的真正发源地与基因宝库。</strong></p>
+            </div>
+
+            <!-- 沿线节点点击导航 -->
+            <h3 style="font-size:15px; color:#5c2223; margin-bottom:10px;">📍 沿线核心节点 (点击定位)</h3>
+            <ul class="node-list" id="nodeListContainer">
+                <!-- JS 动态渲染 -->
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- PolylineDecorator 用于绘制带箭头的航线 -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/leaflet.polylineDecorator.min.js"></script>
+
+<script>
+    // 1. 初始化地图，居中到亚欧大陆视角
+    const map = L.map('map', {
+        center: [36.0, 65.0],
+        zoom: 4,
+        minZoom: 3,
+        maxZoom: 10
+    });
+
+    // 2. 加载复古/古风羊皮纸风格底图 (Stamen Watercolor / Esri National Geographic Style)
+    // 这里选用 Esri World Topo Map / CartoDB Antique 风格做古风融合
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; National Geographic',
+        maxZoom: 12
+    }).addTo(map);
+
+    // 3. 数据定义：重要历史节点 (Points)
+    const nodesData = [
+        {
+            name: "长安 / 敦煌 (起点)",
+            coords: [34.3416, 108.9398],
+            tag: "传播源头",
+            desc: "<b>起点：中国中原/甘肃</b><br>汉代张骞出使西域，建立了丝绸之路，桃作为珍贵果木与种植技术由此开始向西传播。"
+        },
+        {
+            name: "西域诸国 (喀什/霍尔果斯)",
+            coords: [39.4704, 75.9897],
+            tag: "中继点 1",
+            desc: "<b>中继点 1：新疆西域</b><br>绿洲农业的关键节点，桃树在西域绿洲广泛引种并得到改良。"
+        },
+        {
+            name: "中亚 (撒马尔罕)",
+            coords: [39.6542, 66.9597],
+            tag: "中继点 2",
+            desc: "<b>中继点 2：中亚帕米尔高原外</b><br>粟特商人活跃的区域，桃经由河中地区传入西亚农耕带。"
+        },
+        {
+            name: "波斯 (今伊朗)",
+            coords: [32.4279, 53.6880],
+            tag: "中继点 3",
+            desc: "<b>中继点 3：波斯帝国旧地</b><br>公元前1世纪传入。桃在此广为种植，西方文明在此首次接触到桃，故将其误称为“Persica”。"
+        },
+        {
+            name: "古罗马 / 地中海 (意大利)",
+            coords: [41.9028, 12.4964],
+            tag: "终点",
+            desc: "<b>终点：欧洲地中海沿岸</b><br>公元1世纪左右传入古罗马，被罗马人誉为“波斯苹果”，随后遍及全欧洲。"
+        }
+    ];
+
+    // 4. 数据定义：传统丝绸之路背景线 (轻量灰色)
+    const bgSilkRoad = [
+        [34.34, 108.93], [36.06, 103.83], [39.73, 98.49],
+        [40.14, 94.66], [41.72, 82.96], [39.47, 75.98],
+        [39.65, 66.95], [35.68, 51.38], [33.51, 36.29],
+        [31.04, 31.23], [41.90, 12.49]
+    ];
+
+    // 5. 数据定义：桃西传核心主干线 (红色粗线)
+    const mainPeachRoute = [
+        [34.3416, 108.9398], // 长安
+        [39.4704, 75.9897],  // 喀什
+        [39.6542, 66.9597],  // 撒马尔罕
+        [32.4279, 53.6880],  // 波斯
+        [41.9028, 12.4964]   // 罗马
+    ];
+
+    // 6. 绘制背景线
+    L.polyline(bgSilkRoad, {
+        color: '#8b7355',
+        weight: 3,
+        dashArray: '6, 8',
+        opacity: 0.6
+    }).addTo(map);
+
+    // 7. 绘制核心主干线
+    const mainLine = L.polyline(mainPeachRoute, {
+        color: '#e63946',
+        weight: 6,
+        opacity: 0.85,
+        lineCap: 'round'
+    }).addTo(map);
+
+    // 8. 为主干线加上流动方向箭头 (Decorator)
+    if (typeof L.polylineDecorator !== 'undefined') {
+        L.polylineDecorator(mainLine, {
+            patterns: [
+                {
+                    offset: '10%',
+                    repeat: '20%',
+                    symbol: L.Symbol.arrowHead({
+                        pixelSize: 12,
+                        polygon: false,
+                        pathOptions: { stroke: true, color: '#f4f1de', weight: 3 }
+                    })
+                }
+            ]
+        }).addTo(map);
+    }
+
+    // 9. 渲染节点标记与侧边栏列表
+    const nodeListContainer = document.getElementById('nodeListContainer');
+
+    nodesData.forEach((node, index) => {
+        // 创建地图圆点 Icon
+        const customIcon = L.divIcon({
+            className: 'custom-node-pin-wrapper',
+            html: `<div class="custom-node-pin"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+
+        // 添加 Marker 到地图
+        const marker = L.marker(node.coords, { icon: customIcon }).addTo(map);
+
+        // 绑定弹窗
+        marker.bindPopup(`
+            <div style="font-family:'Noto Serif SC', serif; padding:4px;">
+                <h3 style="color:#8c241d; margin-bottom:6px;">${node.name}</h3>
+                <p style="font-size:13px; line-height:1.6; color:#333;">${node.desc}</p>
+            </div>
+        `);
+
+        // 渲染右侧面板节点 DOM
+        const li = document.createElement('li');
+        li.className = 'node-item';
+        li.innerHTML = `
+            <div>
+                <div class="node-name">${index + 1}. ${node.name}</div>
+            </div>
+            <span class="node-tag">${node.tag}</span>
+        `;
+
+        // 点击侧边栏节点，地图飞跃定位并打开 Popup
+        li.addEventListener('click', () => {
+            map.flyTo(node.coords, 6, {
+                duration: 1.5
+            });
+            marker.openPopup();
+        });
+
+        nodeListContainer.appendChild(li);
+    });
+</script>
+</body>
+</html>

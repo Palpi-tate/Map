@@ -1,104 +1,189 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>横断山区 -> 新疆绿洲 蚂蚁线动画</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
-  <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
-  <style>
-    html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #f8f9fa; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>桃 · 华夏图志</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    font-family: "STKaiti", "Kaiti", "PingFang SC", "Microsoft YaHei", serif;
+    color: #f5e6c8;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(200, 80, 40, 0.18), transparent 60%),
+      radial-gradient(1000px 500px at 85% 110%, rgba(180, 120, 30, 0.14), transparent 60%),
+      linear-gradient(180deg, #17090a 0%, #2b1410 55%, #1a0d0b 100%);
+    overflow-x: hidden;
+  }
+
+  /* ── 顶部 ── */
+  .hero {
+    text-align: center;
+    padding: 72px 24px 40px;
+    position: relative;
+  }
+  .hero::after {
+    content: "";
+    position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+    width: 220px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.6), transparent);
+  }
+  .hero h1 {
+    font-size: clamp(40px, 8vw, 72px);
+    font-weight: bold;
+    letter-spacing: 14px;
+    background: linear-gradient(180deg, #ffe9b0, #e8b04b 55%, #b8772a);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 6px 30px rgba(220, 140, 40, 0.25);
+  }
+  .hero .sub {
+    margin-top: 14px;
+    font-size: 16px;
+    letter-spacing: 6px;
+    color: #c9a84c;
+  }
+  .hero .desc {
+    margin: 18px auto 0;
+    max-width: 640px;
+    font-size: 14px;
+    line-height: 2;
+    letter-spacing: 2px;
+    color: #a99278;
+  }
+
+  /* ── 卡片区 ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 26px;
+    max-width: 1100px;
+    margin: 44px auto 80px;
+    padding: 0 26px;
+  }
+
+  .card {
+    position: relative;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 30px 26px 26px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(46, 22, 18, 0.92), rgba(26, 12, 10, 0.94));
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(232, 176, 75, 0.55);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6);
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card .no {
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: #b8860b;
+    margin-bottom: 12px;
+  }
+  .card h2 {
+    font-size: 24px;
+    letter-spacing: 3px;
+    color: #f0d060;
+    margin-bottom: 10px;
+  }
+  .card p {
+    font-size: 13.5px;
+    line-height: 1.9;
+    letter-spacing: 1.5px;
+    color: #a99278;
+  }
+  .card .go {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #e8b04b;
+    border-bottom: 1px solid rgba(232, 176, 75, 0.4);
+    padding-bottom: 2px;
+  }
+
+  /* ── 页脚 ── */
+  footer {
+    text-align: center;
+    padding: 20px 0 46px;
+    font-size: 12.5px;
+    letter-spacing: 3px;
+    color: #7a6857;
+  }
+</style>
 </head>
 <body>
-<div id="map"></div>
-<script>
-// 1. 高德地图底图（国内秒开）
-const osmLayer = new ol.layer.Tile({
-  source: new ol.source.XYZ({
-    url: "https://webrd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
-  })
-});
 
-// 2. 路线坐标
-const routeCoords = [
-  [100.20, 27.20],  // 横断山区
-  [98.00, 30.00],
-  [90.00, 38.00],
-  [84.88, 45.59]    // 新疆绿洲
-];
+  <header class="hero">
+    <h1>桃·华夏图志</h1>
+    <div class="sub">千年一果 · 万里山河</div>
+    <p class="desc">循一枚桃的足迹，看它自横断山野间萌芽，东传京华、南下江南，西渡流沙远赴异域——在盛唐的牡丹与马嵬的残阳之间，铺开一部以地图为卷的华夏风物志。</p>
+  </header>
 
-const vectorSource = new ol.source.Vector();
+  <main class="grid">
 
-// 底层半透明实线（路线背景轨）
-const bgLineFeature = new ol.Feature({
-  geometry: new ol.geom.LineString(routeCoords).transform("EPSG:4326", "EPSG:3857")
-});
-bgLineFeature.setStyle(new ol.style.Style({
-  stroke: new ol.style.Stroke({ color: "rgba(224, 102, 163, 0.6)", width: 6 })
-}));
+    <a class="card" href="1桃起源.html">
+      <div class="no">第一章 · 起源</div>
+      <h2>横断山野 → 新疆绿洲</h2>
+      <p>桃自云岭深谷初生，沿古道西行，抵天山南麓绿洲。蚂蚁线如生命暗涌，点亮最初的家园。</p>
+      <span class="go">进入地图 →</span>
+    </a>
 
-// 上层蚂蚁虚线（流动动画）
-const antLineFeature = new ol.Feature({
-  geometry: new ol.geom.LineString(routeCoords).transform("EPSG:4326", "EPSG:3857")
-});
+    <a class="card" href="2桃起源.html">
+      <div class="no">第二章 · 东传</div>
+      <h2>横断山野 → 北京</h2>
+      <p>自横断山野一路向东，越川陕雄关，直抵京华。一脉桃香，随商旅马蹄入中原腹地。</p>
+      <span class="go">进入地图 →</span>
+    </a>
 
-// 起点终点标注
-const createMarker = (coords, text, color) => {
-  const marker = new ol.Feature({
-    geometry: new ol.geom.Point(ol.proj.fromLonLat(coords))
-  });
-  marker.setStyle(new ol.style.Style({
-    image: new ol.style.Circle({
-      radius: 8,
-      fill: new ol.style.Fill({ color: color }),
-      stroke: new ol.style.Stroke({ color: "#fff", width: 2 })
-    }),
-    text: new ol.style.Text({
-      text: text,
-      font: "bold 15px Microsoft YaHei, sans-serif",
-      offsetY: -22,
-      fill: new ol.style.Fill({ color: "#000" }),
-      stroke: new ol.style.Stroke({ color: "#fff", width: 3 })
-    })
-  }));
-  return marker;
-};
+    <a class="card" href="3桃起源.html">
+      <div class="no">第三章 · 南下</div>
+      <h2>横断山野 → 江南水乡</h2>
+      <p>沿大江而下，过巴蜀、越荆楚，终抵烟雨江南。桃影映水，温柔了半壁山河。</p>
+      <span class="go">进入地图 →</span>
+    </a>
 
-vectorSource.addFeatures([
-  bgLineFeature,
-  antLineFeature,
-  createMarker(routeCoords[0], "横断山区", "#2ecc71"),
-  createMarker(routeCoords[3], "新疆绿洲", "#e74c3c")
-]);
+    <a class="card" href="传播到世界.html">
+      <div class="no">第四章 · 西传</div>
+      <h2>丝绸之路 · 走向世界</h2>
+      <p>桃沿丝路西去，穿越葱岭流沙，散作他乡繁花。一枚果实，成为文明对话的信使。</p>
+      <span class="go">进入地图 →</span>
+    </a>
 
-const vectorLayer = new ol.layer.Vector({ source: vectorSource });
+    <a class="card" href="坎坷流离 · 寒江傲骨.html">
+      <div class="no">第五章 · 凋零</div>
+      <h2>香消玉殒 · 马嵬遗恨</h2>
+      <p>华清池暖、马嵬坡寒。乱世烽烟里，盛世繁花终成遗恨，寒江之上唯余傲骨。</p>
+      <span class="go">进入地图 →</span>
+    </a>
 
-// 3. 初始化地图
-const map = new ol.Map({
-  target: "map",
-  layers: [osmLayer, vectorLayer],
-  view: new ol.View({
-    center: ol.proj.fromLonLat([92.5, 36.0]),
-    zoom: 5
-  })
-});
+    <a class="card" href="盛世极峰 · 盛唐牡丹.html">
+      <div class="no">第六章 · 鼎盛</div>
+      <h2>盛世极峰 · 盛唐牡丹</h2>
+      <p>开元天宝，万国来朝。桃与牡丹共盛放于长安，一座城，便是整个文明的顶峰。</p>
+      <span class="go">进入地图 →</span>
+    </a>
 
-// 4. 蚂蚁线动画
-let offset = 0;
-function animateAnts() {
-  offset -= 0.6;
-  if (offset < -20) offset = 0;
-  antLineFeature.setStyle(new ol.style.Style({
-    stroke: new ol.style.Stroke({
-      color: "#fff",
-      width: 4,
-      lineDash: [12, 12],
-      lineDashOffset: offset
-    })
-  }));
-  requestAnimationFrame(animateAnts);
-}
-animateAnts();
-</script>
+  </main>
+
+  <footer>桃 · 华夏图志 —— 以地图为卷，写一果之千年</footer>
+
 </body>
 </html>

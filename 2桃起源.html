@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>横断山区 -> 北京 蚂蚁线动画</title>
+  <!-- 引入 OpenLayers 样式与 JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+  <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+  <style>
+    html, body, #map {
+      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+  // 1. 加载标准 OpenStreetMap (OSM) 底图
+  const osmLayer = new ol.layer.Tile({
+    source: new ol.source.OSM({
+      url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    })
+  });
+
+  // 2. 路线坐标（起点横断山区 [100.2, 27.2] -> 终点北京 [116.40, 39.90]）
+  const routeCoords = [
+    [100.20, 27.20], // 起点：横断山区
+    [104.06, 30.67], // 途经点：成都附近
+    [108.94, 34.34], // 途经点：西安附近
+    [116.40, 39.90]  // 终点：北京
+  ];
+
+  const vectorSource = new ol.source.Vector();
+
+  // (1) 底层半透明实线（路线背景轨）
+  const bgLineFeature = new ol.Feature({
+    geometry: new ol.geom.LineString(routeCoords).transform('EPSG:4326', 'EPSG:3857')
+  });
+  bgLineFeature.setStyle(new ol.style.Style({
+    stroke: new ol.style.Stroke({ color: 'rgba(224, 102, 163, 0.6)', width: 6 })
+  }));
+
+  // (2) 上层蚂蚁虚线（用于流动动画）
+  const antLineFeature = new ol.Feature({
+    geometry: new ol.geom.LineString(routeCoords).transform('EPSG:4326', 'EPSG:3857')
+  });
+
+  // (3) 起点与终点标注
+  const createMarker = (coords, text) => {
+    const marker = new ol.Feature({
+      geometry: new ol.geom.Point(ol.proj.fromLonLat(coords))
+    });
+    marker.setStyle(new ol.style.Style({
+      image: new ol.style.Icon({
+        anchor: [0.5, 1],
+        scale: 0.8,
+        src: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-2x-green.png'
+      }),
+      text: new ol.style.Text({
+        text: text,
+        font: 'bold 15px Microsoft YaHei, sans-serif',
+        offsetY: -45,
+        fill: new ol.style.Fill({ color: '#000000' }),
+        stroke: new ol.style.Stroke({ color: '#ffffff', width: 3 })
+      })
+    }));
+    return marker;
+  };
+
+  const startMarker = createMarker(routeCoords[0], '横断山区');
+  const endMarker = createMarker(routeCoords[routeCoords.length - 1], '北京');
+
+  vectorSource.addFeatures([bgLineFeature, antLineFeature, startMarker, endMarker]);
+
+  const vectorLayer = new ol.layer.Vector({ source: vectorSource });
+
+  // 3. 初始化地图（中心点调整至覆盖横断山区到北京的中心区域）
+  const map = new ol.Map({
+    target: 'map',
+    layers: [osmLayer, vectorLayer],
+    view: new ol.View({
+      center: ol.proj.fromLonLat([108.3, 33.5]),
+      zoom: 5
+    })
+  });
+
+  // 4. 蚂蚁线动画控制
+  let offset = 0;
+
+  function animateAnts() {
+    offset -= 0.6; // 负数偏移表示从起点流向终点
+    if (offset < -24) {
+      offset = 0;
+    }
+
+    antLineFeature.setStyle(new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: '#ffffff', // 蚂蚁光斑颜色
+        width: 4,
+        lineDash: [12, 12],
+        lineDashOffset: offset
+      })
+    }));
+
+    requestAnimationFrame(animateAnts);
+  }
+
+  // 启动蚂蚁线动画
+  animateAnts();
+</script>
+
+</body>
+</html>

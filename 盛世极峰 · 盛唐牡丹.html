@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>盛世极峰 · 盛唐牡丹</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%; height: 100%;
+            background: #1a0a08;
+            font-family: "STKaiti", "Kaiti", "PingFang SC", "Microsoft YaHei", serif;
+            overflow: hidden;
+        }
+
+        #map { width: 100%; height: 100%; }
+
+        .leaflet-tile-pane {
+            filter: sepia(0.55) saturate(1.7) hue-rotate(335deg) brightness(0.88) contrast(1.05);
+        }
+
+        .title-bar {
+            position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+            z-index: 500;
+            background: rgba(26, 10, 8, 0.92);
+            border: 1px solid #d4af37; border-radius: 24px;
+            padding: 10px 30px; color: #f0d060; font-size: 19pt; font-weight: bold;
+            letter-spacing: 3px; text-align: center;
+            box-shadow: 0 4px 24px rgba(200, 100, 30, 0.35);
+            pointer-events: none;
+        }
+        .title-bar .sub { display: block; font-size: 9.5pt; color: #c9a84c; letter-spacing: 2px; font-weight: normal; margin-top: 2px; }
+        .title-bar .meaning { display: block; font-size: 8pt; color: #c08040; margin-top: 2px; font-style: italic; }
+
+        .poem-chip {
+            position: absolute; bottom: 24px; right: 22px; z-index: 500;
+            background: rgba(26, 10, 8, 0.9);
+            border: 1px solid #b8860b; border-left: 4px solid #c0392b;
+            border-radius: 6px; padding: 10px 16px;
+            color: #f5e6c8; font-family: "STKaiti","Kaiti",serif;
+            font-size: 13pt; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+            pointer-events: none; line-height: 1.8;
+            transition: opacity 0.3s, bottom 0.35s;
+        }
+        .poem-chip .attr { display: block; font-size: 8.5pt; color: #c9a84c; margin-top: 2px; }
+        .poem-chip.shifted { bottom: 150px; }
+
+        .peony-badge {
+            position: absolute; bottom: 24px; left: 22px; z-index: 500;
+            background: rgba(26, 10, 8, 0.9);
+            border: 1px solid #d4af37; border-radius: 20px;
+            padding: 8px 16px; color: #f0d060;
+            font-size: 11.5pt; font-weight: bold; letter-spacing: 2px;
+            box-shadow: 0 4px 16px rgba(200, 100, 30, 0.3);
+            pointer-events: none;
+            transition: bottom 0.35s;
+        }
+        .peony-badge.shifted { bottom: 150px; }
+
+        .story-panel {
+            position: absolute; bottom: 0; left: 0; right: 0; z-index: 600;
+            background: rgba(26, 10, 8, 0.96);
+            border-top: 2px solid #d4af37;
+            padding: 14px 50px 16px 24px;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+            pointer-events: auto;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+        }
+        .story-panel.show { transform: translateY(0); }
+        .story-panel .story-title { font-size: 15pt; font-weight: bold; color: #ffd700; margin-bottom: 3px; }
+        .story-panel .story-time { font-size: 9pt; color: #c9a84c; margin-bottom: 6px; }
+        .story-panel .story-body { font-size: 11pt; color: #f5e6c8; line-height: 1.7; max-width: 800px; }
+        .story-close {
+            position: absolute; top: 10px; right: 16px;
+            width: 28px; height: 28px; border-radius: 50%;
+            border: 1px solid #d4af37; background: rgba(26,10,8,0.9);
+            color: #d4af37; font-size: 16pt; line-height: 26px;
+            text-align: center; cursor: pointer; transition: background 0.2s;
+        }
+        .story-close:hover { background: #d4af37; color: #1a0a08; }
+
+        .lbl-pill {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.72); border-radius: 14px;
+            padding: 2px 10px; white-space: nowrap;
+        }
+        .lbl-huating { color: #ffd700; font-size: 14pt; font-weight: bold; letter-spacing: 1px; }
+        .lbl-huaqing { color: #e8b830; font-size: 12pt; font-weight: bold; }
+        .lbl-shudi   { color: #c89850; font-size: 10.5pt; font-weight: bold; }
+
+        .fig-label {
+            display: inline-block;
+            background: rgba(26,10,8,0.85); border: 1px solid #d4af37;
+            border-radius: 10px; padding: 1px 8px;
+            color: #ffd700; font-family: "STKaiti","Kaiti",serif;
+            font-size: 9pt; font-weight: bold; white-space: nowrap;
+        }
+
+        .leaflet-control-zoom a { background: rgba(26,10,8,0.85)!important; color:#d4af37!important; border-color:#5c3820!important; }
+        .leaflet-control-attribution { background: rgba(26,10,8,0.75)!important; color:#8c7850!important; font-size:7.5pt!important; }
+        .leaflet-control-attribution a { color:#b89640!important; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="title-bar">
+    盛世极峰 · 盛唐牡丹
+    <span class="sub">天宝初年 · 兴庆宫沉香亭</span>
+    <span class="meaning">杨玉环如牡丹，国色天香宠冠六宫</span>
+</div>
+
+<div class="poem-chip" id="poemChip">
+    名花倾国两相欢<br>长得君王带笑看
+    <span class="attr">—— 李白《清平调》</span>
+</div>
+
+<div class="peony-badge" id="peonyBadge">❀ 金边红牡丹</div>
+
+<div class="story-panel" id="storyPanel">
+    <div class="story-close" id="storyClose">&times;</div>
+    <div class="story-title" id="storyTitle"></div>
+    <div class="story-time" id="storyTime"></div>
+    <div class="story-body" id="storyBody"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const TK = '7d4034bb34162bfa4cd8f9126391f180';
+
+const map = L.map('map', { center: [33.4, 108.6], zoom: 7.5, zoomControl: true, attributionControl: true });
+
+L.tileLayer('https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk='+TK,
+    { subdomains:['0','1','2','3','4','5','6','7'], maxZoom:18 }).addTo(map);
+L.tileLayer('https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk='+TK,
+    { subdomains:['0','1','2','3','4','5','6','7'], maxZoom:18 }).addTo(map);
+
+const storyPanel = document.getElementById('storyPanel');
+const storyTitle = document.getElementById('storyTitle');
+const storyTime  = document.getElementById('storyTime');
+const storyBody  = document.getElementById('storyBody');
+const poemChip   = document.getElementById('poemChip');
+const peonyBadge = document.getElementById('peonyBadge');
+
+function showStory(title, time, story) {
+    storyTitle.textContent = title; storyTime.textContent = time;
+    storyBody.textContent = story;
+    storyPanel.classList.add('show'); poemChip.classList.add('shifted'); peonyBadge.classList.add('shifted');
+}
+document.getElementById('storyClose').addEventListener('click', function() {
+    storyPanel.classList.remove('show'); poemChip.classList.remove('shifted'); peonyBadge.classList.remove('shifted');
+});
+
+function peonyIcon(petalColor, centerColor, size) {
+    const h = size/2, or=size*0.28, orx=size*0.14, ory=size*0.23, ir=size*0.18, irx=size*0.10, iry=size*0.16, cr=size*0.12;
+    let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`;
+    s += `<circle cx="${h}" cy="${h}" r="${h-1}" fill="${petalColor}" opacity="0.08"/>`;
+    for (let i=0;i<8;i++){const a=i*45,cx=h+or*Math.sin(a*Math.PI/180),cy=h-or*Math.cos(a*Math.PI/180);s+=`<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${orx}" ry="${ory}" fill="${petalColor}" opacity="0.5" transform="rotate(${a} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`;}
+    for (let i=0;i<8;i++){const a=i*45+22.5,cx=h+ir*Math.sin(a*Math.PI/180),cy=h-ir*Math.cos(a*Math.PI/180);s+=`<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${irx}" ry="${iry}" fill="${petalColor}" opacity="0.75" transform="rotate(${a} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`;}
+    s+=`<circle cx="${h}" cy="${h}" r="${cr}" fill="${centerColor}" stroke="${petalColor}" stroke-width="1.2"/>`;
+    const sr=cr*0.3;
+    s+=`<circle cx="${h-cr*0.35}" cy="${h-cr*0.2}" r="${sr}" fill="${petalColor}" opacity="0.8"/>`;
+    s+=`<circle cx="${h+cr*0.35}" cy="${h-cr*0.2}" r="${sr}" fill="${petalColor}" opacity="0.8"/>`;
+    s+=`<circle cx="${h}" cy="${h+cr*0.4}" r="${sr}" fill="${petalColor}" opacity="0.8"/>`;
+    s+='</svg>'; return s;
+}
+
+// ══════════ 坐标：蜀地 → 长安沉香亭 → 华清宫 ══════════
+const shudi   = [30.66, 104.06];
+const huating = [34.254, 108.986];   // 兴庆宫沉香亭
+const huaqing = [34.36, 109.22];     // 华清宫（骊山温泉）
+const routePoints = [shudi, huating, huaqing];
+
+L.polyline(routePoints, { color:'#d4af37', weight:2.5, dashArray:'8,6', opacity:0.7, smoothFactor:1 }).addTo(map);
+
+const stories = {
+    shudi:   ['蜀地 · 官宦之家', '开元七年（719年）',
+        '杨玉环生于官宦之家，自幼聪慧，精通音律，善歌舞，尤擅琵琶。蜀地山水赋予她灵秀之质与非凡的艺术天赋。少女时代的她如含苞牡丹，等待着在盛世宫廷中绽放出倾国之姿。'],
+    huating: ['长安 · 兴庆宫沉香亭', '天宝初年（约743年）',
+        '唐玄宗与杨贵妃在兴庆宫沉香亭赏牡丹。李龟年率乐队欲歌，玄宗曰："赏名花，对妃子，焉用旧词？"遂召李白进《清平调》三首。"云想衣裳花想容，春风拂槛露华浓"——以牡丹喻贵妃，人花相映，千古绝唱。这是杨玉环一生最璀璨的时刻。'],
+    huaqing: ['骊山 · 华清宫', '天宝年间',
+        '华清宫是玄宗与杨贵妃最钟爱的离宫。"春寒赐浴华清池，温泉水滑洗凝脂"——每年十月，玄宗携贵妃至此避寒，温泉氤氲中霓裳羽衣曲绕梁不绝。骊山脚下牡丹成片，贵妃如花中魁首，集三千宠爱于一身。'],
+};
+
+function mkPeony(pos, petal, center, sz, storyKey) {
+    const mk = L.marker(pos, {
+        icon: L.divIcon({ className:'', html:peonyIcon(petal,center,sz), iconSize:[sz,sz], iconAnchor:[sz/2,sz/2] })
+    }).addTo(map);
+    mk.on('click', function(){ const s=stories[storyKey]; showStory(s[0],s[1],s[2]); });
+    return mk;
+}
+function mkLabel(pos, html, w, h, ax, ay) {
+    L.marker(pos, { icon: L.divIcon({ className:'', html:html, iconSize:[w,h], iconAnchor:[ax,ay] }) }).addTo(map);
+}
+
+mkPeony(huating, '#c0392b', '#ffd700', 52, 'huating');
+mkLabel(huating, '<div class="lbl-pill"><span class="lbl-huating">长安 · 兴庆宫沉香亭</span></div>', 210, 32, 105, 40);
+
+mkPeony(huaqing, '#b8860b', '#ffd700', 36, 'huaqing');
+mkLabel(huaqing, '<div class="lbl-pill"><span class="lbl-huaqing">华清宫</span></div>', 80, 26, 40, 30);
+
+mkPeony(shudi, '#8c6d58', '#d4af37', 28, 'shudi');
+mkLabel(shudi, '<div class="lbl-pill"><span class="lbl-shudi">蜀地</span></div>', 54, 22, 27, 26);
+
+// ══════════ 杨玉环人物形象 ══════════
+function yangFigure(robeColor, beltColor, skinColor) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -12 66 76" width="66" height="76">
+        <defs>
+            <filter id="ys"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.4"/></filter>
+        </defs>
+        <g filter="url(#ys)">
+            <!-- 披帛 左 -->
+            <path d="M8 24 Q-7 18 -8 34 Q-4 30 3 27" fill="${beltColor}" opacity="0.45"/>
+            <path d="M-8 34 Q-5 40 0 38 Q-3 35 -4 31" fill="${beltColor}" opacity="0.3"/>
+            <!-- 长裙曳地 -->
+            <path d="M6 44 Q4 56 3 64 L37 64 Q38 56 34 44 Z" fill="${robeColor}" opacity="0.9"/>
+            <!-- 裙摆褶皱 -->
+            <path d="M14 50 Q16 58 13 64" stroke="${robeColor}" stroke-width="0.6" fill="none" opacity="0.5"/>
+            <path d="M26 50 Q24 58 27 64" stroke="${robeColor}" stroke-width="0.6" fill="none" opacity="0.5"/>
+            <!-- 上襦 -->
+            <path d="M10 18 C7 30 7 38 8 48 L32 48 C34 38 33 30 30 18 Z" fill="${robeColor}"/>
+            <!-- 交领 -->
+            <path d="M13 18 L20 26 L27 18" fill="none" stroke="#3a1510" stroke-width="1"/>
+            <path d="M13 18 L20 28 L13 18" fill="#2a0a05" opacity="0.2"/>
+            <!-- 束腰 -->
+            <rect x="7" y="32" width="26" height="3" rx="1.5" fill="${beltColor}"/>
+            <rect x="16" y="31" width="8" height="5" rx="1.5" fill="${beltColor}" opacity="0.7"/>
+            <!-- 腰带垂绦 -->
+            <path d="M18 35 L17 48" stroke="${beltColor}" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+            <!-- 披帛 右 -->
+            <path d="M28 22 Q42 16 46 26 Q40 23 32 26" fill="${beltColor}" opacity="0.45"/>
+            <!-- 左袖 -->
+            <path d="M10 20 Q0 26 -1 34 Q2 31 8 27 Z" fill="${robeColor}"/>
+            <!-- 右袖 -->
+            <path d="M30 20 Q40 24 42 32 Q38 29 32 26 Z" fill="${robeColor}"/>
+            <!-- 双手交叠 -->
+            <ellipse cx="18" cy="28" rx="4" ry="2.5" fill="${skinColor}" opacity="0.8"/>
+            <ellipse cx="22" cy="28" rx="4" ry="2.5" fill="${skinColor}" opacity="0.8"/>
+            <!-- 颈 -->
+            <rect x="16" y="12" width="8" height="6" rx="3" fill="${skinColor}"/>
+            <!-- 面部 -->
+            <ellipse cx="20" cy="8" rx="5.5" ry="6.5" fill="${skinColor}"/>
+            <!-- 高髻 底层 -->
+            <ellipse cx="20" cy="-2" rx="8" ry="6" fill="#1a1a1a"/>
+            <!-- 高髻 中层 -->
+            <ellipse cx="20" cy="-6" rx="6" ry="7" fill="#1a1a1a"/>
+            <!-- 高髻 顶部 -->
+            <ellipse cx="20" cy="-11" rx="4.5" ry="5" fill="#1a1a1a"/>
+            <!-- 发髻光泽 -->
+            <ellipse cx="18" cy="-7" rx="2.5" ry="3.5" fill="#2a2a2a" opacity="0.6"/>
+            <!-- 金钗 · 牡丹花钿 -->
+            <circle cx="20" cy="-14" r="2.5" fill="${beltColor}"/>
+            <circle cx="16" cy="-12" r="1.5" fill="${beltColor}" opacity="0.8"/>
+            <circle cx="24" cy="-12" r="1.5" fill="${beltColor}" opacity="0.8"/>
+            <circle cx="14" cy="-8" r="1.2" fill="${beltColor}" opacity="0.7"/>
+            <circle cx="26" cy="-8" r="1.2" fill="${beltColor}" opacity="0.7"/>
+            <!-- 花钿(额饰) -->
+            <circle cx="20" cy="2" r="1.2" fill="${beltColor}" opacity="0.9"/>
+            <!-- 黛眉 -->
+            <path d="M15.5 6 Q17 5 18.5 6" stroke="#3a2a1a" stroke-width="0.7" fill="none"/>
+            <path d="M21.5 6 Q23 5 24.5 6" stroke="#3a2a1a" stroke-width="0.7" fill="none"/>
+            <!-- 眼 -->
+            <ellipse cx="17.5" cy="7.5" rx="0.8" ry="0.9" fill="#2a1a1a"/>
+            <ellipse cx="22.5" cy="7.5" rx="0.8" ry="0.9" fill="#2a1a1a"/>
+            <!-- 鼻 -->
+            <path d="M20 7 L20 9.5" stroke="#d4b896" stroke-width="0.4"/>
+            <!-- 朱唇 -->
+            <ellipse cx="20" cy="11" rx="1.8" ry="1.2" fill="#c0392b" opacity="0.8"/>
+            <!-- 耳坠 -->
+            <circle cx="13.5" cy="8" r="1" fill="${beltColor}" opacity="0.7"/>
+            <circle cx="26.5" cy="8" r="1" fill="${beltColor}" opacity="0.7"/>
+        </g>
+    </svg>`;
+}
+
+const yangIcon = L.divIcon({
+    className: '',
+    html: yangFigure('#c0392b', '#ffd700', '#f5e0c0'),
+    iconSize: [66, 76], iconAnchor: [33, 70],
+});
+const yangMarker = L.marker([shudi[0], shudi[1]], { icon: yangIcon, zIndexOffset: 100 }).addTo(map);
+
+const nameIcon = L.divIcon({
+    className: '',
+    html: '<div class="fig-label">杨玉环</div>',
+    iconSize: [52, 18], iconAnchor: [33, 78],
+});
+const nameMarker = L.marker([shudi[0], shudi[1]], { icon: nameIcon, zIndexOffset: 101 }).addTo(map);
+
+function startAnimation(marker, nameMk, path, durationMs) {
+    const segs = []; let total = 0;
+    for (let i=1;i<path.length;i++){const d=map.distance(path[i-1],path[i]);segs.push({a:path[i-1],b:path[i],dist:d,cum:total});total+=d;}
+    if(total===0)return;
+    (function anim(ts){
+        const elapsed=ts%durationMs,target=(elapsed/durationMs)*total;
+        for(const sg of segs){
+            if(target>=sg.cum&&target<=sg.cum+sg.dist){
+                const t=sg.dist===0?0:(target-sg.cum)/sg.dist;
+                const lat=sg.a[0]+(sg.b[0]-sg.a[0])*t,lng=sg.a[1]+(sg.b[1]-sg.a[1])*t;
+                marker.setLatLng([lat,lng]);nameMk.setLatLng([lat,lng]);break;
+            }
+        }
+        requestAnimationFrame(anim);
+    })(performance.now());
+}
+
+startAnimation(yangMarker, nameMarker, routePoints, 12000);
+</script>
+</body>
+</html>
