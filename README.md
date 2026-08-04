@@ -70,7 +70,7 @@ location /tiles/natgeo/ {
 
 | 页面 | 底图 | 加载方式 |
 |---|---|---|
-| `index.html` | OpenStreetMap | 直连（国外源，国内访问可能受限） |
+| `index.html` | OpenStreetMap | 服务器代理 `/tiles/osm/` |
 | `tao2` / `tao3` | OpenStreetMap | 服务器代理 `/tiles/osm/` |
 | `tao-world` | ArcGIS NatGeo（古风） | 服务器代理 `/tiles/natgeo/` |
 | `mawei` / `tang` | 天地图 | 直连（国内） |
