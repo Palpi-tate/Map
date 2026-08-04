@@ -17,10 +17,10 @@
 <div id="map"></div>
 
 <script>
-  // 1. 加载标准 OpenStreetMap (OSM) 底图（显式指定 https 避免被拦截）
+  // 1. 加载 OpenStreetMap 底图（经服务器瓦片代理，国内可直连访问，无需梯子）
   const osmLayer = new ol.layer.Tile({
-    source: new ol.source.OSM({
-      url: 'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    source: new ol.source.XYZ({
+      url: 'tiles/osm/{z}/{x}/{y}.png'
     })
   });
 
