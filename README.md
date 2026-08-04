@@ -21,10 +21,10 @@
 用户浏览器
     │
     ▼
-https://saturday-earwig-unlisted.ngrok-free.dev/   ← ngrok 免费隧道（https 域名）
+https://zhangynteam.xyz/   ← 正式域名（腾讯云购买 + Let's Encrypt HTTPS）
     │
     ▼
-Droplet 服务器 167.71.192.92 : 80   ← nginx 静态站点
+Droplet 服务器 167.71.192.92 : 443/80   ← nginx 静态站点
     │
     ▼
 /var/www/html（本仓库 git clone）
@@ -32,7 +32,8 @@ Droplet 服务器 167.71.192.92 : 80   ← nginx 静态站点
 
 - **GitHub 仓库**：`Palpi-tate/Map`（公开，分支 `main`）—— 唯一代码源
 - **服务器**：DigitalOcean Droplet（Ubuntu 24.04，`/var/www/html` 是 git clone）
-- **域名**：ngrok 免费隧道域名（重启/断线后地址可能变化）
+- **正式域名**：`zhangynteam.xyz`（腾讯云 DNSPod 解析 + Let's Encrypt 免费证书，自动续期，永久稳定）
+- **备用隧道**：ngrok 免费隧道域名（重启/断线后地址可能变化，仅应急用）
 
 ## 🧪 核心技术：服务器瓦片代理
 
@@ -98,7 +99,7 @@ location /tiles/natgeo/ {
    cd /var/www/html
    git pull origin main
    ```
-4. **验证**：浏览器访问对应页面即可看到更新（注意 ngrok 首次访问需点 "Visit Site"）。
+4. **验证**：浏览器访问 `https://zhangynteam.xyz/对应页面` 即可看到更新。
 
 ### 新增页面
 
@@ -117,11 +118,12 @@ git clone https://github.com/Palpi-tate/Map.git /var/www/html
 
 ## 📌 注意事项
 
+- **正式域名**：`https://zhangynteam.xyz` 是主访问地址（Let's Encrypt 证书自动续期，无需手动管理）。
 - **旧中文文件名链接已废弃**：早期版本使用 `传播到世界.html` 等中文文件名，现已改为英文短名，旧链接会返回 404。
-- **ngrok 拦截页**：免费版首次访问会显示 "Visit Site" 确认页，点一下即可，之后不再出现。
+- **隐形字符导致 404**：从微信/Word 复制链接到地址栏时，末尾可能带零宽空格（`%E2%80%8B`），导致 404；用 Backspace 删除末尾隐形字符或直接输入干净网址。
 - **服务器直连 GitHub**：若本地网络无法直连 GitHub，已为 git 配置系统代理 `127.0.0.1:7897`。
 - **外网 SSH(22) 关闭**：无法直接 SSH，统一通过 DigitalOcean 的 **Web Console** 操作服务器。
-- **App Platform**：账号下没有已部署的 App Platform 应用，服务全部运行在 Droplet + ngrok 上。
+- **Droplet**：服务全部运行在 Droplet 上（nginx + 正式域名），ngrok 仅作应急备用。
 
 ## 🌐 关于 ngrok（你的隧道域名技术）
 
@@ -156,9 +158,24 @@ Droplet 的 80 端口 → nginx → 网站页面
 
 ## 📬 如何访问（访问流程）
 
-### 方式一：通过 ngrok 域名（推荐，https，可分享给任何人）
+### 方式一：通过正式域名（推荐 ✅，https，永久稳定，无警告页）
 
 **第 1 步**：打开浏览器，输入以下完整地址（域名 + 页面路径）：
+
+| 页面 | 完整访问地址 |
+|---|---|
+| 首页（桃之起源） | `https://zhangynteam.xyz/index.html` |
+| 桃·东传北京 | `https://zhangynteam.xyz/tao2.html` |
+| 桃·南下江南 | `https://zhangynteam.xyz/tao3.html` |
+| 桃·西传世界 | `https://zhangynteam.xyz/tao-world.html` |
+| 马嵬遗恨 | `https://zhangynteam.xyz/mawei.html` |
+| 盛唐牡丹 | `https://zhangynteam.xyz/tang.html` |
+
+**第 2 步**：进入后即为全屏交互地图页面，直接用鼠标/手指拖动查看即可。
+
+> 💡 手机、电脑、任何设备都能打开，无需安装任何软件；复制上面的完整链接发给别人就能直接访问。
+
+### 方式二：通过 ngrok 隧道（备用，免费版有警告页且地址可能变化）
 
 | 页面 | 完整访问地址 |
 |---|---|
@@ -169,29 +186,23 @@ Droplet 的 80 端口 → nginx → 网站页面
 | 马嵬遗恨 | `https://saturday-earwig-unlisted.ngrok-free.dev/mawei.html` |
 | 盛唐牡丹 | `https://saturday-earwig-unlisted.ngrok-free.dev/tang.html` |
 
-**第 2 步**：首次访问会看到 ngrok 的 "Visit Site" 确认页
-- 点击 **Visit Site** 按钮即可进入真实页面
-- 同一个浏览器之后再次访问不会再出现该确认页
+> 首次访问会看到 ngrok 的 "Visit Site" 确认页，点击 **Visit Site** 即可进入；同一个浏览器之后不再出现。域名若失效（ngrok 免费版重启后地址可能变化），请按"工作流程"重新获取域名并同步服务器。
 
-**第 3 步**：进入后即为全屏交互地图页面，直接用鼠标/手指拖动查看即可。
-
-> 💡 手机、电脑、任何设备都能打开，无需安装任何软件；复制上面的完整链接发给别人就能直接访问。
-
-### 方式二：通过服务器公网 IP（备选，无 https 证书）
+### 方式三：通过服务器公网 IP（备选，无 https 证书）
 
 浏览器直接访问服务器 IP 的 80 端口：
 
 - `http://167.71.192.92/index.html`
 - 或 `http://167.71.192.92/tao2.html` 等
 
-> ⚠️ 注意：IP 方式为 http（无加密），仅作备选；日常分享请使用 ngrok 的 https 域名。
+> ⚠️ 注意：IP 方式为 http（无加密），仅作备选；日常分享请使用正式域名 `https://zhangynteam.xyz`。
 
 ### 访问流程速览
 
 ```
-浏览器输入地址 → (仅首次) ngrok 确认页点 "Visit Site" → 看到地图页面
+浏览器输入地址 → 看到地图页面
 ```
 
 - 地址 = 域名 + `/` + 文件名（如 `/tao2.html`）
 - 想访问哪张图，就把对应的文件名换成上表的路径即可
-- 域名若失效（ngrok 免费版重启后地址可能变化），请按"工作流程"重新获取域名并同步服务器
+- ⚠️ 若 404，先检查网址末尾是否有隐形字符（`%E2%80%8B` 零宽空格）
