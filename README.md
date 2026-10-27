@@ -67,14 +67,17 @@ location /tiles/natgeo/ {
 - OpenLayers：`source: new ol.source.XYZ({ url: 'tiles/osm/{z}/{x}/{y}.png' })`
 - Leaflet：`L.tileLayer('tiles/natgeo/{z}/{y}/{x}', {...}).addTo(map)`
 
-**各页面底图一览**：
+**各页面底图一览**（2026-10 已全部统一为天地图，直连，不再依赖服务器瓦片代理）：
 
 | 页面 | 底图 | 加载方式 |
 |---|---|---|
-| `index.html` | OpenStreetMap | 服务器代理 `/tiles/osm/` |
-| `tao2` / `tao3` | OpenStreetMap | 服务器代理 `/tiles/osm/` |
-| `tao-world` | ArcGIS NatGeo（古风） | 服务器代理 `/tiles/natgeo/` |
-| `mawei` / `tang` | 天地图 | 直连（国内） |
+| `index.html` | 天地图 矢量 + 注记（vec + cva） | 直连（国内） |
+| `tao2` / `tao3` | 天地图 矢量 + 注记（vec + cva） | 直连（国内） |
+| `tao-world` | 天地图 矢量 + 注记（vec + cva） | 直连（国内） |
+| `mawei` / `tang` | 天地图 矢量 + 注记（vec + cva） | 直连（国内） |
+
+> 天地图 token 写在每个页面顶部的 `TDT_TK` / `TK` 常量里，如需更换只改这一处。
+> 下方的 nginx 瓦片代理配置保留作为**备用方案**（若要回退到 OSM / ArcGIS NatGeo 时用）。
 
 **注意事项**：
 
